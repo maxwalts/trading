@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 
+
 # Get hourly prices for Bitcoin and Ethereum (last 90 days)
 def get_hourly_prices(crypto_id, days):
     url = f'https://api.coingecko.com/api/v3/coins/{crypto_id}/market_chart'
@@ -16,6 +17,7 @@ def get_hourly_prices(crypto_id, days):
     # print(response.headers)
     return response.json()
 
+
 def get_daily_prices(crypto_id, days):
     url = f'https://api.coingecko.com/api/v3/coins/{crypto_id}/market_chart'
     params = {
@@ -28,10 +30,11 @@ def get_daily_prices(crypto_id, days):
     # print(response.headers)
     return response.json()
 
+
 # Process data and create a pandas DataFrame
 def process_data(data):
     prices = [price_data[1] for price_data in data['prices']]
-    timestamps = [price_data[0] // 1000 for price_data in data['prices']] # Convert to seconds
+    timestamps = [price_data[0] // 1000 for price_data in data['prices']]  # Convert to seconds
     return pd.DataFrame({'timestamp': timestamps, 'price': prices})
 
 
@@ -96,5 +99,6 @@ def generate_daily_plot(days=90):
     plt.grid(True)
     plt.show()
 
+
 if __name__ == '__main__':
-    generate_daily_plot(365*4)
+    generate_daily_plot(365 * 4)

@@ -1,7 +1,14 @@
 import pandas as pd
+import numpy as np
+import btc_eth_ratio
 
 # Load historical price data from a CSV file or API
-price_data = pd.read_csv('price_data.csv')  # replace with your own data source
+# price_data = pd.read_csv('price_data.csv')  # replace with your own data source
+
+# get hourly data
+price_data = btc_eth_ratio.get_hourly_prices('bitcoin', 90)
+price_data = btc_eth_ratio.process_data(price_data)
+
 
 # Define your trading strategy
 def trading_strategy(price_data):
@@ -10,10 +17,40 @@ def trading_strategy(price_data):
     # The DataFrame should have columns 'timestamp', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size'
     return strategy_data
 
+
+# Define the moving average crossover strategy
+def moving_average_crossover_strategy(price_data, short_window=10, long_window=20):
+    # display the price data
+    # print(price_data)
+    # create close price column
+    price_data['close'] = price_data['price']
+
+    # Calculate the short-term and long-term moving averages
+    price_data['short_moving_avg'] = price_data['close'].rolling(window=short_window).mean()
+    price_data['long_moving_avg'] = price_data['close'].rolling(window=long_window).mean()
+
+    # Generate buy and sell signals based on the moving average crossover
+    price_data['buy_signal'] = np.where(price_data['short_moving_avg'] > price_data['long_moving_avg'], True, False)
+    price_data['sell_signal'] = np.where(price_data['short_moving_avg'] < price_data['long_moving_avg'], True, False)
+
+    # Calculate the buy and sell sizes based on available capital
+    price_data['buy_size'] = np.where(price_data['buy_signal'], 1000 / price_data['close'], 0)
+    price_data['sell_size'] = np.where(price_data['sell_signal'], 1000 / price_data['close'], 0)
+
+    # Remove rows with missing data
+    price_data = price_data.dropna()
+
+    # Return the strategy data
+    strategy_data = price_data[['timestamp', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size']]
+    return strategy_data
+
+
 # Simulate trades based on your trading strategy
 def simulate_trades(price_data, strategy_data):
     # Merge the price data with the strategy data
-    merged_data = pd.merge(price_data, strategy_data, on='timestamp')
+    # drop rows of price_data that have nan in long_moving_avg column
+    price_data = price_data.dropna()
+    # merged_data = pd.merge(price_data, strategy_data, on='timestamp', how='left')
 
     # Initialize variables for tracking trades and portfolio value
     portfolio_value = 0
@@ -22,7 +59,7 @@ def simulate_trades(price_data, strategy_data):
     trades = []
 
     # Loop over each row in the merged data and simulate trades
-    for i, row in merged_data.iterrows():
+    for i, row in price_data.iterrows():
         # If there is a buy signal, use the available USD balance to buy BTC
         if row['buy_signal']:
             btc_balance += row['buy_size']
@@ -44,8 +81,10 @@ def simulate_trades(price_data, strategy_data):
     # Return the list of trades
     return trades
 
+
 # Run the backtest
-strategy_data = trading_strategy(price_data)
+# strategy_data = trading_strategy(price_data)
+strategy_data = moving_average_crossover_strategy(price_data)
 trades = simulate_trades(price_data, strategy_data)
 
 # Print the list of trades
