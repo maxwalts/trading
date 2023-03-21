@@ -2,23 +2,17 @@ import pandas as pd
 import numpy as np
 import btc_eth_ratio
 
-# Load historical price data from a CSV file or API
-# price_data = pd.read_csv('price_data.csv')  # replace with your own data source
-
-# get hourly data
-price_data = btc_eth_ratio.get_hourly_prices('bitcoin', 90)
-price_data = btc_eth_ratio.process_data(price_data)
-
 
 # Define your trading strategy
-def trading_strategy(price_data):
-    # Implement your trading strategy here
-    # The function should return a Pandas DataFrame with buy/sell signals and trade sizes
-    # The DataFrame should have columns 'timestamp', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size'
-    return strategy_data
+# def trading_strategy(price_data):
+#     # Implement your trading strategy here
+#     # The function should return a Pandas DataFrame with buy/sell signals and trade sizes
+#     # The DataFrame should have columns 'timestamp', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size'
+#     return strategy_data
 
 
 # Define the moving average crossover strategy
+# TODO: potential source of bias: is the daily price the average of the whole day, which we don't know until the end of the day?
 def moving_average_crossover_strategy(price_data, short_window=10, long_window=20):
     # display the price data
     # print(price_data)
@@ -41,15 +35,17 @@ def moving_average_crossover_strategy(price_data, short_window=10, long_window=2
     price_data = price_data.dropna()
 
     # Return the strategy data
-    strategy_data = price_data[['timestamp', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size']]
-    return strategy_data
+    price_strategy_df = price_data[['timestamp', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size']]
+    price_strategy_df = price_strategy_df.dropna()
+    
+    return price_strategy_df
 
 
 # Simulate trades based on your trading strategy
-def simulate_trades(price_data, strategy_data):
+def simulate_trades(price_strategy_df):
     # Merge the price data with the strategy data
     # drop rows of price_data that have nan in long_moving_avg column
-    price_data = price_data.dropna()
+    price_strategy_df = price_strategy_df.dropna()
     # merged_data = pd.merge(price_data, strategy_data, on='timestamp', how='left')
 
     # Initialize variables for tracking trades and portfolio value
@@ -59,7 +55,7 @@ def simulate_trades(price_data, strategy_data):
     trades = []
 
     # Loop over each row in the merged data and simulate trades
-    for i, row in price_data.iterrows():
+    for i, row in price_strategy_df.iterrows():
         # If there is a buy signal, use the available USD balance to buy BTC
         if row['buy_signal']:
             btc_balance += row['buy_size']
@@ -77,16 +73,20 @@ def simulate_trades(price_data, strategy_data):
 
     # Print the final portfolio value
     print(f'Final portfolio value: {portfolio_value}')
+    print(f'Total number of trades: {len(trades)}')
 
     # Return the list of trades
     return trades
 
 
 # Run the backtest
-# strategy_data = trading_strategy(price_data)
-strategy_data = moving_average_crossover_strategy(price_data)
-trades = simulate_trades(price_data, strategy_data)
+# get hourly data
+price_data = btc_eth_ratio.get_hourly_prices('bitcoin', 90)
+price_data = btc_eth_ratio.process_data(price_data)
+price_strategy_df = moving_average_crossover_strategy(price_data)
+trades = simulate_trades(price_strategy_df)
+
 
 # Print the list of trades
-for trade in trades:
-    print(trade)
+# for trade in trades:
+#     print(trade)
