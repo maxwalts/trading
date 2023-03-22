@@ -1,6 +1,8 @@
+from matplotlib import pyplot as plt
+from matplotlib.dates import DateFormatter
 import pandas as pd
 import numpy as np
-import btc_eth_ratio
+import plots
 
 
 # Define your trading strategy
@@ -35,7 +37,7 @@ def moving_average_crossover_strategy(price_data, short_window=10, long_window=2
     price_data = price_data.dropna()
 
     # Return the strategy data
-    price_strategy_df = price_data[['timestamp', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size']]
+    price_strategy_df = price_data[['timestamp', 'close', 'buy_signal', 'sell_signal', 'buy_size', 'sell_size']]
     price_strategy_df = price_strategy_df.dropna()
     
     return price_strategy_df
@@ -71,21 +73,60 @@ def simulate_trades(price_strategy_df):
         # Calculate the portfolio value based on the current balances and BTC price
         portfolio_value = usd_balance + (btc_balance * row['close'])
 
+        # save portfolio value to dataframe
+        price_strategy_df.loc[i, 'portfolio_value'] = portfolio_value
+        # save USD balance to dataframe
+        price_strategy_df.loc[i, 'usd_balance'] = usd_balance
+
     # Print the final portfolio value
     print(f'Final portfolio value: {portfolio_value}')
     print(f'Total number of trades: {len(trades)}')
 
     # Return the list of trades
-    return trades
+    return price_strategy_df
 
 
 # Run the backtest
 # get hourly data
-price_data = btc_eth_ratio.get_hourly_prices('bitcoin', 90)
-price_data = btc_eth_ratio.process_data(price_data)
+price_data = plots.get_daily_prices('bitcoin', 30)
+price_data = plots.process_data(price_data)
 price_strategy_df = moving_average_crossover_strategy(price_data)
-trades = simulate_trades(price_strategy_df)
+price_strategy_df = simulate_trades(price_strategy_df)
 
+def plot_backtest(price_strategy_df):
+    # plot portfolio value, USD balance and buy/sell signals
+    plt.figure(figsize=(12, 6))
+    plt.plot(price_strategy_df['timestamp'], price_strategy_df['portfolio_value'], label='Portfolio Value')
+    # plot USD balance
+    plt.plot(price_strategy_df['timestamp'], price_strategy_df['usd_balance'], label='USD Balance')
+    # plot change in close price (start with 0)
+    plt.plot(price_strategy_df['timestamp'], price_strategy_df['close'].diff(), label='Change in Close Price')
+
+    # plot Buy and Sell signals
+
+    plt.scatter(price_strategy_df[price_strategy_df['buy_signal']]['timestamp'],
+                price_strategy_df[price_strategy_df['buy_signal']]['portfolio_value'],
+                marker='^', color='green', s=10, label='Buy Signal')
+    plt.scatter(price_strategy_df[price_strategy_df['sell_signal']]['timestamp'],
+                price_strategy_df[price_strategy_df['sell_signal']]['portfolio_value'],
+                marker='v', color='red', s=10, label='Sell Signal')
+
+    plt.legend()
+    plt.xlabel('Timestamp')
+    plt.ylabel('Portfolio Value')
+    plt.title('Portfolio Value Over Time')
+    plt.xticks(rotation=45)
+
+    # date_formatter = DateFormatter('%Y-%m-%d %H:%M:%S')
+    # plt.gca().xaxis.set_major_formatter(date_formatter)
+    # plt.gca().xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    # plt.gcf().autofmt_xdate()
+
+    plt.grid(True)
+    plt.show()
+
+
+plot_backtest(price_strategy_df)
 
 # Print the list of trades
 # for trade in trades:
