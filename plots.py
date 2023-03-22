@@ -127,5 +127,5 @@ def plot_portfolio_value(price_strategy_df):
 if __name__ == '__main__':
     
     plot_ratio('hourly', 90)
-    plot_prices('hourly', 90)
+    # plot_prices('hourly', 90)
     # generate_plot('daily', 365)
