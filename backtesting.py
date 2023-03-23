@@ -48,7 +48,6 @@ def simulate_trades(price_strategy_df):
     # Merge the price data with the strategy data
     # drop rows of price_data that have nan in long_moving_avg column
     price_strategy_df = price_strategy_df.dropna()
-    # merged_data = pd.merge(price_data, strategy_data, on='timestamp', how='left')
 
     # Initialize variables for tracking trades and portfolio value
     portfolio_value = 0
